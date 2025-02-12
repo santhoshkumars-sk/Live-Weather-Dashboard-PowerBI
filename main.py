@@ -24,7 +24,7 @@ google_creds_json ={
 }
 
 
-creds_dict = json.loads(google_creds_json)
+creds_dict = google_creds_json
 
 # Google Sheets API
 creds = Credentials.from_service_account_info(creds_dict)
