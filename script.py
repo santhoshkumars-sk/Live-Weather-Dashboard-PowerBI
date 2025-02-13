@@ -65,8 +65,6 @@ def fetch_data(lat, lon, city):
                 key_usage[api_key] += 2  
                 timezone_offset = weather_data["timezone"]  
                 pollutants = pollution_data["list"][0].get("components", {})
-                last_updated = datetime.utcnow() + timedelta(seconds=timezone_offset)
-                last_updated_str = last_updated.strftime('%Y-%m-%d %H:%M:%S')
                 return {
                     "Latitude": lat, "Longitude": lon, "City": city,
                     "Weather": weather_data["weather"][0]["description"].title(),
@@ -85,24 +83,20 @@ def fetch_data(lat, lon, city):
                     "NO₂": str(pollutants.get("no2", "0")), "O₃": str(pollutants.get("o3", "0")),
                     "SO₂": str(pollutants.get("so2", "0")), "PM2.5": str(pollutants.get("pm2_5", "0")),
                     "PM10": str(pollutants.get("pm10", "0")), "NH₃": str(pollutants.get("nh3", "0")),
-                    "Last Updated": last_updated_str
                 }
         except Exception as e:
             print(f"Error fetching data for {city}: {e}")
     return None
 
 def fetch_all_data():
-    current_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    def fetch_data_with_timestamp(loc):
-        data = fetch_data(*loc)
-        if data:
-            data["Last Updated"] = current_timestamp
-        return data
+    IST = pytz.timezone('Asia/Kolkata')
+    current_timestamp = datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')
     with ThreadPoolExecutor(max_workers=15) as executor:
-        results = list(executor.map(fetch_data_with_timestamp, districts))
+        results = list(executor.map(lambda loc: fetch_data(*loc), districts))
     data_df = pd.DataFrame(filter(None, results))
     if data_df.empty:
         return
+    data_df["Last Updated"] = current_timestamp
     worksheet.clear()
     set_with_dataframe(worksheet, data_df, include_index=False, include_column_header=True)
 
