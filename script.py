@@ -28,7 +28,7 @@ gc = gspread.authorize(creds)
 spreadsheet = gc.open_by_url(spreadsheet_url)
 worksheet = spreadsheet.sheet1
 
-# CSV Data(list of cities)
+# CSV Data (list of cities)
 CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/weather-and-pollution-dashboard/main/city_coordinates.csv"
 districts_df = pd.read_csv(CSV_URL)
 districts = districts_df[["Latitude", "Longitude", "City"]].values.tolist()
@@ -37,49 +37,36 @@ api_keys = api_keys_env.split(",")
 api_key_cycle = cycle(api_keys)
 key_usage = {key: 0 for key in api_keys}
 
-# Column names
 HEADERS = ["Latitude", "Longitude", "City", "Weather", "Weather Icon", "Temperature (°C)",
            "Pressure (hPa)", "Humidity (%)", "Visibility (km)", "Wind Speed (km/h)", "Wind Degree (°)",
            "Cloud Coverage (%)", "Sunrise", "Sunset", "AQI", "CO", "NO", "NO₂", "O₃", "SO₂", "PM2.5", "PM10", "NH₃", "Last Updated"]
 
-# Function
 def get_api_key():
     for _ in range(len(api_keys)):
         api_key = next(api_key_cycle)
         if key_usage[api_key] < 57:
             return api_key
-   
     time.sleep(60) 
     return next(api_key_cycle)
 
-# Fetch Weather & Pollution Data
 def fetch_data(lat, lon, city):
-    for _ in range(3):  # Retries
+    for _ in range(3):
         api_key = get_api_key()
         weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
         pollution_url = f"https://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
-
         try:
             weather_response = requests.get(weather_url)
             pollution_response = requests.get(pollution_url)
-
-            # Handle API request errors
             if weather_response.status_code != 200 or pollution_response.status_code != 200:
-                
                 continue
-
             weather_data = weather_response.json()
             pollution_data = pollution_response.json()
-            
             if "main" in weather_data and "list" in pollution_data:
                 key_usage[api_key] += 2  
                 timezone_offset = weather_data["timezone"]  
-
                 pollutants = pollution_data["list"][0].get("components", {})
-
                 last_updated = datetime.utcnow() + timedelta(seconds=timezone_offset)
                 last_updated_str = last_updated.strftime('%Y-%m-%d %H:%M:%S')
-
                 return {
                     "Latitude": lat, "Longitude": lon, "City": city,
                     "Weather": weather_data["weather"][0]["description"].title(),
@@ -102,22 +89,20 @@ def fetch_data(lat, lon, city):
                 }
         except Exception as e:
             print(f"Error fetching data for {city}: {e}")
-
     return None
 
-# Multithreading
 def fetch_all_data():
+    current_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    def fetch_data_with_timestamp(loc):
+        data = fetch_data(*loc)
+        if data:
+            data["Last Updated"] = current_timestamp
+        return data
     with ThreadPoolExecutor(max_workers=15) as executor:
-        results = list(executor.map(lambda loc: fetch_data(*loc), districts))
-
+        results = list(executor.map(fetch_data_with_timestamp, districts))
     data_df = pd.DataFrame(filter(None, results))
-
     if data_df.empty:
-        print("No data fetched.")
-       
         return
-
-    # Update Google Sheet
     worksheet.clear()
     set_with_dataframe(worksheet, data_df, include_index=False, include_column_header=True)
 
