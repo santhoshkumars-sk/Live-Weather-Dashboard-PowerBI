@@ -83,20 +83,14 @@ Latitude,Longitude,state,City
 24.893152,85.5451599,Bihar,Nawada
 19.877263,75.3390241,Bihar,Aurangabad
 19.877263,75.3390241,Maharashtra,Aurangabad
-19.877263,75.3390241,Bihar,Aurangabad
-19.877263,75.3390241,Maharashtra,Aurangabad
 25.2113384,84.9873701,Bihar,Jehanabad
 25.24324,84.662895,Bihar,Arwal
 27.1961862,76.086545,Chhattisgarh,Balod
 27.4295126,82.1854602,Chhattisgarh,Balrampur
 27.4295126,82.1854602,Uttar Pradesh,Balrampur
-27.4295126,82.1854602,Chhattisgarh,Balrampur
-27.4295126,82.1854602,Uttar Pradesh,Balrampur
 21.7140465,81.535504,Chhattisgarh,Bemetara
 19.2092928,81.9326448,Chhattisgarh,Bastar
 18.7935679,80.815939,Chhattisgarh,Bijapur
-22.0785627,82.1476475,Chhattisgarh,Bilaspur
-22.0785627,82.1476475,Himachal Pradesh,Bilaspur
 22.0785627,82.1476475,Chhattisgarh,Bilaspur
 22.0785627,82.1476475,Himachal Pradesh,Bilaspur
 21.1896499,81.2851077,Chhattisgarh,Durg
@@ -164,8 +158,6 @@ Latitude,Longitude,state,City
 30.1231349,77.286329,Haryana,Yamunanagar
 32.5565043,76.1249971,Himachal Pradesh,Chamba
 32.1031646,76.2723559,Himachal Pradesh,Kangra
-25.93448625,80.03137142,Himachal Pradesh,Hamirpur
-25.93448625,80.03137142,Uttar Pradesh,Hamirpur
 25.93448625,80.03137142,Himachal Pradesh,Hamirpur
 25.93448625,80.03137142,Uttar Pradesh,Hamirpur
 31.9578974,77.1089232,Himachal Pradesh,Kullu
