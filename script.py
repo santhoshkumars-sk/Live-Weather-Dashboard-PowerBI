@@ -101,6 +101,7 @@ def fetch_data(lat, lon, city):
                     "Last Updated": last_updated_str
                 }
         except Exception as e:
+            print(f"Error fetching data for {city}: {e}")
 
     return None
 
@@ -112,6 +113,7 @@ def fetch_all_data():
     data_df = pd.DataFrame(filter(None, results))
 
     if data_df.empty:
+        print("No data fetched.")
        
         return
 
