@@ -87,7 +87,7 @@ def fetch_data(lat, lon, city):
                 "NO₂": str(pollutants.get("no2", "0")), "O₃": str(pollutants.get("o3", "0")),
                 "SO₂": str(pollutants.get("so2", "0")), "PM2.5": str(pollutants.get("pm2_5", "0")),
                 "PM10": str(pollutants.get("pm10", "0")), "NH₃": str(pollutants.get("nh3", "0")),
-                "Last Updated": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                "Last Updated": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             }
     return None
 
