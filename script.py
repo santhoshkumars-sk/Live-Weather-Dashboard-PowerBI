@@ -15,9 +15,6 @@ import pytz
 google_creds_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
 spreadsheet_url = os.getenv("GOOGLE_SHEET_URL")
 api_keys_env = os.getenv("OPENWEATHER_API_KEYS")
-
-if not google_creds_json or not spreadsheet_url or not api_keys_env:
-    raise ValueError("Missing required environment variables. Check your GitHub Secrets or local environment settings.")
     
 # Authenticate Google Sheets API
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
