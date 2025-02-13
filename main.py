@@ -9,35 +9,42 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import cycle
 from datetime import datetime
 
-#Environment variables
+# Load Environment Variables
 google_creds_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
-creds_dict = json.loads(google_creds_json)
+spreadsheet_url = os.getenv("GOOGLE_SHEET_URL")
+api_keys_env = os.getenv("OPENWEATHER_API_KEYS")
 
-#Google Sheets API
-creds = Credentials.from_service_account_info(creds_dict)
+if not google_creds_json or not spreadsheet_url or not api_keys_env:
+    raise ValueError("Missing required environment variables. Check your GitHub Secrets or local environment settings.")
+
+# OAuth Scope for Google Sheets API
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+# Authenticate Google Sheets API
+creds_dict = json.loads(google_creds_json)
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 gc = gspread.authorize(creds)
 
-#Google Sheet URL
-SPREADSHEET_URL = os.getenv("GOOGLE_SHEET_URL")
-spreadsheet = gc.open_by_url(SPREADSHEET_URL)
+# Open Google Sheet
+spreadsheet = gc.open_by_url(spreadsheet_url)
 worksheet = spreadsheet.sheet1
 
-#CSV contains list of city names
+# Load CSV Data (List of City Names)
 CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/weather-and-pollution-dashboard/main/latnlon.csv"
 districts_df = pd.read_csv(CSV_URL)
 districts = districts_df[["Latitude", "Longitude", "City"]].values.tolist()
 
-#API Keys
-api_keys = os.getenv("OPENWEATHER_API_KEYS").split(",") 
+# API Key Management
+api_keys = api_keys_env.split(",") 
 api_key_cycle = cycle(api_keys)
 key_usage = {key: 0 for key in api_keys}
 
-#column names
+# Column Headers
 HEADERS = ["Latitude", "Longitude", "City", "Weather", "Weather Icon", "Temperature (°C)",
            "Pressure (hPa)", "Humidity (%)", "Visibility (km)", "Wind Speed (km/h)", "Wind Degree (°)",
            "Cloud Coverage (%)", "Sunrise", "Sunset", "AQI", "CO", "NO", "NO₂", "O₃", "SO₂", "PM2.5", "PM10", "NH₃", "Last Updated"]
 
-#Fetch Weather & Pollution Data
+# Fetch Weather & Pollution Data
 def fetch_data(lat, lon, city):
     for _ in range(3):  # Retries
         api_key = next(api_key_cycle)
@@ -47,8 +54,15 @@ def fetch_data(lat, lon, city):
         weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
         pollution_url = f"https://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
 
-        weather_data = requests.get(weather_url).json()
-        pollution_data = requests.get(pollution_url).json()
+        weather_response = requests.get(weather_url)
+        pollution_response = requests.get(pollution_url)
+
+        # Handle API request errors
+        if weather_response.status_code != 200 or pollution_response.status_code != 200:
+            continue  # Skip if any request fails
+
+        weather_data = weather_response.json()
+        pollution_data = pollution_response.json()
         
         if "main" in weather_data and "list" in pollution_data:
             key_usage[api_key] += 2
@@ -77,15 +91,16 @@ def fetch_data(lat, lon, city):
             }
     return None
 
-# Multithreading
+# Multithreading for Faster Data Fetching
 def fetch_all_data():
     with ThreadPoolExecutor(max_workers=15) as executor:
         results = list(executor.map(lambda loc: fetch_data(*loc), districts))
     
     data_df = pd.DataFrame(filter(None, results))
+
+    # Update Google Sheet
     worksheet.clear()
     set_with_dataframe(worksheet, data_df, include_index=False, include_column_header=True)
 
 if __name__ == "__main__":
     fetch_all_data()
-
