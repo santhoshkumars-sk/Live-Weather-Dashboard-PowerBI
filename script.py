@@ -30,7 +30,7 @@ spreadsheet = gc.open_by_url(spreadsheet_url)
 worksheet = spreadsheet.sheet1
 
 # CSV Data (list of cities)
-CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/weather-and-pollution-dashboard/main/city_coordinates.csv"
+CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/Live-Weather-Dashboard-PowerBI/main/city_coordinates.csv"
 districts_df = pd.read_csv(CSV_URL)
 districts = districts_df[["Latitude", "Longitude", "City"]].values.tolist()
 
