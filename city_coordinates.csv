@@ -82,16 +82,13 @@ Begusarai,25.4138614,86.1348858,Bihar
 Gaya,24.7964355,85.0079563,Bihar
 Nawada,24.893152,85.5451599,Bihar
 Aurangabad,19.877263,75.3390241,Bihar
-Aurangabad,19.877263,75.3390241,Maharashtra
 Jehanabad,25.2113384,84.9873701,Bihar
 Arwal,25.24324,84.662895,Bihar
 Balod,27.1961862,76.086545,Chhattisgarh
 Balrampur,27.4295126,82.1854602,Chhattisgarh
-Balrampur,27.4295126,82.1854602,Uttar Pradesh
 Bemetara,21.7140465,81.535504,Chhattisgarh
 Bastar,19.2092928,81.9326448,Chhattisgarh
 Bijapur,18.7935679,80.815939,Chhattisgarh
-Bilaspur,22.0785627,82.1476475,Chhattisgarh
 Bilaspur,22.0785627,82.1476475,Himachal Pradesh
 Durg,21.1896499,81.2851077,Chhattisgarh
 Gariaband,20.633566,82.0635429,Chhattisgarh
@@ -159,7 +156,6 @@ Yamunanagar,30.1231349,77.286329,Haryana
 Chamba,32.5565043,76.1249971,Himachal Pradesh
 Kangra,32.1031646,76.2723559,Himachal Pradesh
 Hamirpur,25.93448625,80.03137142,Himachal Pradesh
-Hamirpur,25.93448625,80.03137142,Uttar Pradesh
 Kullu,31.9578974,77.1089232,Himachal Pradesh
 Mandi,31.7084496,76.9293782,Himachal Pradesh
 Shimla,31.1041526,77.1709729,Himachal Pradesh
@@ -426,9 +422,6 @@ Phalodi,27.1294121,72.3649644,Rajasthan
 Kota,25.1737019,75.8574194,Rajasthan
 Pali,48.8588897,2.320041022,Rajasthan
 Nagaur,27.2000843,73.7377453,Rajasthan
-Pratapgarh,25.8990129,81.9375402,Rajasthan
-Pratapgarh,25.8990129,81.9375402,Uttar Pradesh
-Pratapgarh,25.8990129,81.9375402,Rajasthan
 Pratapgarh,25.8990129,81.9375402,Uttar Pradesh
 Rajsamand,25.0585825,73.8880816,Rajasthan
 Sanchore,24.7533864,71.7720096,Rajasthan
