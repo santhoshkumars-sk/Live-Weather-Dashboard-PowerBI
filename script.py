@@ -37,7 +37,7 @@ key_usage = {key: 0 for key in api_keys}
 
 HEADERS = ["Latitude", "Longitude", "City", "Weather", "Weather Icon", "Temperature (°C)",
            "Pressure (hPa)", "Humidity (%)", "Visibility (km)", "Wind Speed (km/h)", "Wind Degree (°)",
-           "Cloud Coverage (%)", "Sunrise", "Sunset", "AQI", "CO", "NO", "NO₂", "O₃", "SO₂", "PM2.5", "PM10", "NH₃", "Last Updated"]
+           "Cloud Coverage (%)", "Sunrise", "Sunset", "AQI", "AQI Category", "CO", "NO", "NO₂", "O₃", "SO₂", "PM2.5", "PM10", "NH₃", "Last Updated"]
 
 def get_api_key():
     for _ in range(len(api_keys)):
@@ -46,6 +46,10 @@ def get_api_key():
             return api_key
     time.sleep(60) 
     return next(api_key_cycle)
+
+def get_aqi_category(aqi):
+    categories = {1: "Good", 2: "Fair", 3: "Moderate", 4: "Poor", 5: "Very Poor"}
+    return categories.get(aqi, "Unknown")
 
 def fetch_data(lat, lon, city):
     for _ in range(3):
@@ -63,6 +67,7 @@ def fetch_data(lat, lon, city):
                 key_usage[api_key] += 2  
                 timezone_offset = weather_data["timezone"]  
                 pollutants = pollution_data["list"][0].get("components", {})
+                aqi_value = pollution_data["list"][0]["main"]["aqi"]
                 return {
                     "Latitude": lat, "Longitude": lon, "City": city,
                     "Weather": weather_data["weather"][0]["description"].title(),
@@ -76,7 +81,8 @@ def fetch_data(lat, lon, city):
                     "Cloud Coverage (%)": f"{weather_data.get('clouds', {}).get('all', 0)}%",
                     "Sunrise": datetime.utcfromtimestamp(weather_data["sys"]["sunrise"] + timezone_offset).strftime('%I:%M %p'),
                     "Sunset": datetime.utcfromtimestamp(weather_data["sys"]["sunset"] + timezone_offset).strftime('%I:%M %p'),
-                    "AQI": pollution_data["list"][0]["main"]["aqi"],
+                    "AQI": aqi_value,
+                    "AQI Category": get_aqi_category(aqi_value),
                     "CO": str(pollutants.get("co", "0")), "NO": str(pollutants.get("no", "0")),
                     "NO₂": str(pollutants.get("no2", "0")), "O₃": str(pollutants.get("o3", "0")),
                     "SO₂": str(pollutants.get("so2", "0")), "PM2.5": str(pollutants.get("pm2_5", "0")),
