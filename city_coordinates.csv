@@ -15,8 +15,8 @@ Nandyal,15.4736293,78.4806592,Andhra Pradesh
 Annamayya,14.4295461,79.976088,Andhra Pradesh
 Chittoor,13.2161224,79.0972819,Andhra Pradesh
 Anantapur,14.6783221,77.6065039,Andhra Pradesh
-Tawang,27.5879186,91.863733,Arunachal Pradesh
 Tirupati,13.6316368,79.4231711,Andhra Pradesh
+Tawang,27.5879186,91.863733,Arunachal Pradesh
 Siang,-6.0172085,146.9508128,Arunachal Pradesh
 Namsai,27.6658391,95.861432,Arunachal Pradesh
 Tirap,27.2973854,95.7677387,Arunachal Pradesh
@@ -105,6 +105,17 @@ Rajnandgaon,21.0964906,81.029154,Chhattisgarh
 Sakti,-8.7060094,115.4819099,Chhattisgarh
 Sukma,18.3932222,81.6569457,Chhattisgarh
 Surajpur,23.212528,82.8667246,Chhattisgarh
+Central Delhi,28.6562,77.2245,Delhi
+East Delhi,28.6507,77.3027,Delhi
+New Delhi,28.6139,77.209,Delhi
+North Delhi,28.715,77.1647,Delhi
+North East Delhi,28.7216,77.2766,Delhi
+North West Delhi,28.7193,77.0676,Delhi
+Shahdara,28.6758,77.2892,Delhi
+South Delhi,28.4819,77.1873,Delhi
+South East Delhi,28.539,77.2793,Delhi
+South West Delhi,28.5916,76.934,Delhi
+West Delhi,28.6663,77.1031,Delhi
 Amreli,21.5981407,71.2102139,Gujarat
 Ahmedabad,23.0216238,72.5797068,Gujarat
 Anand,22.5584995,72.9625629,Gujarat
@@ -591,14 +602,4 @@ Murshidabad,24.1745993,88.2721335,West Bengal
 Purba Bardhaman,23.41888815,87.85401622,West Bengal
 Purba Medinipur,22.2788123,87.92250436,West Bengal
 Purulia,23.3291882,86.3672378,West Bengal
-Central Delhi,28.6562,77.2245,Delhi
-East Delhi,28.6507,77.3027,Delhi
-New Delhi,28.6139,77.209,Delhi
-North Delhi,28.715,77.1647,Delhi
-North East Delhi,28.7216,77.2766,Delhi
-North West Delhi,28.7193,77.0676,Delhi
-Shahdara,28.6758,77.2892,Delhi
-South Delhi,28.4819,77.1873,Delhi
-South East Delhi,28.539,77.2793,Delhi
-South West Delhi,28.5916,76.934,Delhi
-West Delhi,28.6663,77.1031,Delhi
+
