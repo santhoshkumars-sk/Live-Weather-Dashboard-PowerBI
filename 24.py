@@ -8,6 +8,7 @@ import pytz
 import gspread
 from google.oauth2.service_account import Credentials
 from gspread_dataframe import set_with_dataframe
+import time
 
 # Environment Variables
 google_creds_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
@@ -24,20 +25,20 @@ spreadsheet = gc.open_by_url(spreadsheet_url)
 try:
     worksheet = spreadsheet.worksheet("24_Hour_Data")
 except gspread.exceptions.WorksheetNotFound:
-    worksheet = spreadsheet.add_worksheet(title="24_Hour_Data", rows="1000", cols="10")
+    worksheet = spreadsheet.add_worksheet(title="24_Hour_Data", rows="20000", cols="10")
 
-# Read city coordinates from CSV with column names
+# Read city coordinates from CSV
 CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/Live-Weather-Dashboard-PowerBI/main/city_coordinates.csv"
 districts_df = pd.read_csv(CSV_URL)
 
-# Create a dictionary for quick lookup of city names by (latitude, longitude)
+# Prepare city lookup with consistent rounding for matching
 city_lookup = {
     (round(row["Latitude"], 4), round(row["Longitude"], 4)): row["City"]
     for _, row in districts_df.iterrows()
 }
 
-# Prepare list of (lat, lon) tuples for API requests
-districts = [(lat, lon) for lat, lon in city_lookup.keys()]
+# Generate a list of (lat, lon, city) tuples
+districts = [(lat, lon, city_lookup[(lat, lon)]) for lat, lon in city_lookup.keys()]
 
 # Open-Meteo API URL template for today's data
 IST = pytz.timezone('Asia/Kolkata')
@@ -49,52 +50,60 @@ API_URL_TEMPLATE = (
 
 HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Temperature (°C)"]
 
-# Fetch data for a single city using the city name from the CSV (via city_lookup)
-def fetch_today_data(lat, lon):
-    city = city_lookup.get((round(lat, 4), round(lon, 4)), "Unknown")
-    try:
-        url = API_URL_TEMPLATE.format(lat=lat, lon=lon, date=today_date)
-        response = requests.get(url, timeout=15)
-        response.raise_for_status()
-        data = response.json()
+# Fetch data with retry mechanism
+def fetch_today_data(lat, lon, city, retries=3, delay=5):
+    attempt = 0
+    while attempt < retries:
+        try:
+            url = API_URL_TEMPLATE.format(lat=lat, lon=lon, date=today_date)
+            response = requests.get(url, timeout=15)
+            response.raise_for_status()
+            data = response.json()
 
-        timestamps = data.get("hourly", {}).get("time", [])
-        temperatures = data.get("hourly", {}).get("temperature_2m", [])
+            timestamps = data.get("hourly", {}).get("time", [])
+            temperatures = data.get("hourly", {}).get("temperature_2m", [])
 
-        if not timestamps or not temperatures:
-            print(f"⚠️ No data available for {city}.")
-            return []
+            if not timestamps or not temperatures:
+                print(f"⚠️ No data available for {city} on attempt {attempt + 1}.")
+                return []
 
-        return [{
-            "City": city,
-            "Latitude": lat,
-            "Longitude": lon,
-            "Timestamp": ts,
-            "Temperature (°C)": temp
-        } for ts, temp in zip(timestamps, temperatures)]
+            return [{
+                "City": city,
+                "Latitude": lat,
+                "Longitude": lon,
+                "Timestamp": ts,
+                "Temperature (°C)": temp
+            } for ts, temp in zip(timestamps, temperatures)]
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Request error for {city}: {e}")
-        return []
+        except requests.exceptions.RequestException as e:
+            attempt += 1
+            print(f"❌ Request error for {city} (attempt {attempt}/{retries}): {e}")
+            if attempt < retries:
+                print(f"🔄 Retrying in {delay} seconds...")
+                time.sleep(delay)
+
+    print(f"🚫 Failed to fetch data for {city} after {retries} attempts.")
+    return []
 
 # Fetch data for all cities
 def fetch_all_cities_data():
     all_data = []
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        future_to_coords = {
-            executor.submit(fetch_today_data, lat, lon): (lat, lon)
-            for lat, lon in districts
-        }
 
-        for future in as_completed(future_to_coords):
-            lat, lon = future_to_coords[future]
-            city = city_lookup.get((round(lat, 4), round(lon, 4)), "Unknown")
-            try:
-                data = future.result()
-                all_data.extend(data)
-                print(f"✅ Data fetched for {city} ({len(data)} records)")
-            except Exception as e:
-                print(f"❌ Error processing {city}: {e}")
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        futures = [executor.submit(fetch_today_data, lat, lon, city) for lat, lon, city in districts]
+
+        for future in as_completed(futures):
+            city_data = future.result()
+            if city_data:
+                all_data.extend(city_data)
+
+    total_expected_records = len(districts) * 24
+    actual_records = len(all_data)
+
+    if actual_records < total_expected_records:
+        print(f"⚠️ Records fetched: {actual_records}/{total_expected_records} (Some data might be missing)")
+    else:
+        print(f"✅ All expected records fetched: {actual_records}")
 
     if not all_data:
         print("⚠️ No data fetched.")
@@ -103,7 +112,7 @@ def fetch_all_cities_data():
     df = pd.DataFrame(all_data, columns=HEADERS)
     worksheet.clear()
     set_with_dataframe(worksheet, df, include_index=False, include_column_header=True)
-    print(f"✅ Data successfully written to Google Sheets ({len(df)} records).")
+    print(f"✅ Data written to Google Sheets ({len(df)} records).")
 
 if __name__ == "__main__":
     fetch_all_cities_data()
