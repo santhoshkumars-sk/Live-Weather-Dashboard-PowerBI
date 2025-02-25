@@ -24,7 +24,7 @@ spreadsheet = gc.open_by_url(spreadsheet_url)
 try:
     worksheet = spreadsheet.worksheet("24_Hour_Data")
 except gspread.exceptions.WorksheetNotFound:
-    worksheet = spreadsheet.add_worksheet(title="24_Hour_Data", rows="20000", cols="10")
+    worksheet = spreadsheet.add_worksheet(title="24_Hour_Data", rows="50000", cols="10")
 
 # Read city coordinates from CSV
 CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/Live-Weather-Dashboard-PowerBI/main/city_coordinates.csv"
@@ -41,8 +41,8 @@ API_URL_TEMPLATE = (
 
 HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Temperature (°C)"]
 
-# Fetch data with retry mechanism
-def fetch_today_data(lat, lon, city, retries=3, delay=5):
+# Fetch data with retry mechanism (Exponential Backoff)
+def fetch_today_data(lat, lon, city, retries=5, delay=2):
     for attempt in range(1, retries + 1):
         try:
             response = requests.get(API_URL_TEMPLATE.format(lat=lat, lon=lon, date=today_date), timeout=15)
@@ -53,6 +53,7 @@ def fetch_today_data(lat, lon, city, retries=3, delay=5):
             temperatures = data.get("hourly", {}).get("temperature_2m", [])
 
             if not timestamps or not temperatures:
+                print(f"⚠️ No data received for {city}")
                 return []
 
             return [{
@@ -63,22 +64,30 @@ def fetch_today_data(lat, lon, city, retries=3, delay=5):
                 "Temperature (°C)": temp
             } for ts, temp in zip(timestamps, temperatures)]
 
-        except requests.exceptions.RequestException:
-            if attempt < retries:
-                time.sleep(delay)
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error fetching data for {city} (Attempt {attempt}/{retries}): {e}")
+            time.sleep(delay * attempt)  # Exponential backoff
 
+    print(f"🚨 Max retries reached for {city}. Skipping...")
     return []
 
 # Fetch and save data for all cities
 def fetch_all_cities_data():
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        all_data = [result for future in as_completed(
-            [executor.submit(fetch_today_data, lat, lon, city) for lat, lon, city in districts]
-        ) if (result := future.result())]
+    with ThreadPoolExecutor(max_workers=10) as executor:  # Reduce workers to prevent rate-limiting
+        futures = {executor.submit(fetch_today_data, lat, lon, city): city for lat, lon, city in districts}
 
-    df = pd.DataFrame([record for city_data in all_data for record in city_data], columns=HEADERS)
+        all_data = []
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                all_data.extend(result)
+            else:
+                print(f"⚠️ Skipped: No data for {futures[future]}")
+
+    df = pd.DataFrame(all_data, columns=HEADERS)
 
     if not df.empty:
+        print(f"📌 Saving {len(df)} records to 24_Hour_Data")
         worksheet.clear()
         set_with_dataframe(worksheet, df, include_index=False, include_column_header=True)
 
