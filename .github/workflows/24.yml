@@ -1,0 +1,29 @@
+name: Run 24-Hour Data Script
+
+on:
+  schedule:
+    - cron: "15 */2 * * *"  # Offset by 15 minutes from the existing workflow
+  workflow_dispatch:
+
+jobs:
+  run-24-hour-script:
+    runs-on: ubuntu-latest
+
+    env:
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      GOOGLE_SHEET_URL: ${{ secrets.GOOGLE_SHEET_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run 24-Hour Data Script
+        run: python 24.py
