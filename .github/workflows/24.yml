@@ -1,12 +1,12 @@
-name: Run 24-Hour Data Script
+name: Run Daily Data Script
 
 on:
   schedule:
-    - cron: "15 */2 * * *"  # Offset by 15 minutes from the existing workflow
-  workflow_dispatch:
+    - cron: "0 6 * * *"  # Runs at 6:00 AM UTC daily
+  workflow_dispatch:  # Allows manual execution
 
 jobs:
-  run-24-hour-script:
+  run-daily-script:
     runs-on: ubuntu-latest
 
     env:
@@ -25,5 +25,5 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run 24-Hour Data Script
+      - name: Run Daily Data Script
         run: python 24.py
