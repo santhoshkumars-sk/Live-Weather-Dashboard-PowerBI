@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 import pytz
 import gspread
@@ -21,7 +21,10 @@ gc = gspread.authorize(creds)
 
 # Google Sheet
 spreadsheet = gc.open_by_url(spreadsheet_url)
-worksheet = spreadsheet.worksheet("24_Hour_Data")  # Create a separate sheet for 24-hour data
+try:
+    worksheet = spreadsheet.worksheet("24_Hour_Data")
+except gspread.exceptions.WorksheetNotFound:
+    worksheet = spreadsheet.add_worksheet(title="24_Hour_Data", rows="1000", cols="10")
 
 # Read city coordinates from CSV
 CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/Live-Weather-Dashboard-PowerBI/main/city_coordinates.csv"
@@ -33,15 +36,20 @@ API_URL_TEMPLATE = "https://api.open-meteo.com/v1/forecast?latitude={lat}&longit
 
 HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Temperature (°C)"]
 
+# Fetch data for a single city
 def fetch_24_hour_data(lat, lon, city):
     try:
         url = API_URL_TEMPLATE.format(lat=lat, lon=lon)
-        response = requests.get(url)
+        response = requests.get(url, timeout=15)
         response.raise_for_status()
         data = response.json()
 
-        timestamps = data["hourly"]["time"]
-        temperatures = data["hourly"]["temperature_2m"]
+        timestamps = data.get("hourly", {}).get("time", [])
+        temperatures = data.get("hourly", {}).get("temperature_2m", [])
+
+        if not timestamps or not temperatures:
+            print(f"No data available for {city}.")
+            return []
 
         return [{
             "City": city,
@@ -51,25 +59,33 @@ def fetch_24_hour_data(lat, lon, city):
             "Temperature (°C)": temp
         } for ts, temp in zip(timestamps, temperatures)]
 
-    except Exception as e:
-        print(f"Error fetching data for {city}: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Request error for {city}: {e}")
         return []
 
+# Fetch data for all cities with progress tracking
 def fetch_all_cities_data():
-    with ThreadPoolExecutor(max_workers=15) as executor:
-        results = list(executor.map(lambda loc: fetch_24_hour_data(*loc), districts))
+    all_data = []
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        future_to_city = {executor.submit(fetch_24_hour_data, lat, lon, city): city for lat, lon, city in districts}
 
-    # Flatten the list of lists
-    all_data = [item for sublist in results for item in sublist]
-    
+        for future in as_completed(future_to_city):
+            city = future_to_city[future]
+            try:
+                data = future.result()
+                all_data.extend(data)
+                print(f"✅ Data fetched for {city} ({len(data)} records)")
+            except Exception as e:
+                print(f"❌ Error processing {city}: {e}")
+
     if not all_data:
-        print("No data fetched.")
+        print("⚠️ No data fetched.")
         return
 
     df = pd.DataFrame(all_data, columns=HEADERS)
     worksheet.clear()
     set_with_dataframe(worksheet, df, include_index=False, include_column_header=True)
-    print("Data successfully written to Google Sheets.")
+    print(f"✅ Data successfully written to Google Sheets ({len(df)} records).")
 
 if __name__ == "__main__":
     fetch_all_cities_data()
