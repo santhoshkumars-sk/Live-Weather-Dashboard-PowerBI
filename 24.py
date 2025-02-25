@@ -16,11 +16,10 @@ spreadsheet_url = os.getenv("GOOGLE_SHEET_URL")
 
 # Authenticate Google Sheets API
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-creds_dict = json.loads(google_creds_json)
-creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+creds = Credentials.from_service_account_info(json.loads(google_creds_json), scopes=SCOPES)
 gc = gspread.authorize(creds)
 
-# Google Sheet
+# Google Sheet Setup
 spreadsheet = gc.open_by_url(spreadsheet_url)
 try:
     worksheet = spreadsheet.worksheet("24_Hour_Data")
@@ -30,17 +29,9 @@ except gspread.exceptions.WorksheetNotFound:
 # Read city coordinates from CSV
 CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/Live-Weather-Dashboard-PowerBI/main/city_coordinates.csv"
 districts_df = pd.read_csv(CSV_URL)
+districts = list(zip(districts_df["Latitude"].round(4), districts_df["Longitude"].round(4), districts_df["City"]))
 
-# Prepare city lookup with consistent rounding for matching
-city_lookup = {
-    (round(row["Latitude"], 4), round(row["Longitude"], 4)): row["City"]
-    for _, row in districts_df.iterrows()
-}
-
-# Generate a list of (lat, lon, city) tuples
-districts = [(lat, lon, city_lookup[(lat, lon)]) for lat, lon in city_lookup.keys()]
-
-# Open-Meteo API URL template for today's data
+# Open-Meteo API URL Template
 IST = pytz.timezone('Asia/Kolkata')
 today_date = datetime.now(IST).strftime('%Y-%m-%d')
 API_URL_TEMPLATE = (
@@ -52,11 +43,9 @@ HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Temperature (°C)"]
 
 # Fetch data with retry mechanism
 def fetch_today_data(lat, lon, city, retries=3, delay=5):
-    attempt = 0
-    while attempt < retries:
+    for attempt in range(1, retries + 1):
         try:
-            url = API_URL_TEMPLATE.format(lat=lat, lon=lon, date=today_date)
-            response = requests.get(url, timeout=15)
+            response = requests.get(API_URL_TEMPLATE.format(lat=lat, lon=lon, date=today_date), timeout=15)
             response.raise_for_status()
             data = response.json()
 
@@ -64,7 +53,6 @@ def fetch_today_data(lat, lon, city, retries=3, delay=5):
             temperatures = data.get("hourly", {}).get("temperature_2m", [])
 
             if not timestamps or not temperatures:
-                print(f"⚠️ No data available for {city} on attempt {attempt + 1}.")
                 return []
 
             return [{
@@ -75,44 +63,24 @@ def fetch_today_data(lat, lon, city, retries=3, delay=5):
                 "Temperature (°C)": temp
             } for ts, temp in zip(timestamps, temperatures)]
 
-        except requests.exceptions.RequestException as e:
-            attempt += 1
-            print(f"❌ Request error for {city} (attempt {attempt}/{retries}): {e}")
+        except requests.exceptions.RequestException:
             if attempt < retries:
-                print(f"🔄 Retrying in {delay} seconds...")
                 time.sleep(delay)
 
-    print(f"🚫 Failed to fetch data for {city} after {retries} attempts.")
     return []
 
-# Fetch data for all cities
+# Fetch and save data for all cities
 def fetch_all_cities_data():
-    all_data = []
-
     with ThreadPoolExecutor(max_workers=20) as executor:
-        futures = [executor.submit(fetch_today_data, lat, lon, city) for lat, lon, city in districts]
+        all_data = [result for future in as_completed(
+            [executor.submit(fetch_today_data, lat, lon, city) for lat, lon, city in districts]
+        ) if (result := future.result())]
 
-        for future in as_completed(futures):
-            city_data = future.result()
-            if city_data:
-                all_data.extend(city_data)
+    df = pd.DataFrame([record for city_data in all_data for record in city_data], columns=HEADERS)
 
-    total_expected_records = len(districts) * 24
-    actual_records = len(all_data)
-
-    if actual_records < total_expected_records:
-        print(f"⚠️ Records fetched: {actual_records}/{total_expected_records} (Some data might be missing)")
-    else:
-        print(f"✅ All expected records fetched: {actual_records}")
-
-    if not all_data:
-        print("⚠️ No data fetched.")
-        return
-
-    df = pd.DataFrame(all_data, columns=HEADERS)
-    worksheet.clear()
-    set_with_dataframe(worksheet, df, include_index=False, include_column_header=True)
-    print(f"✅ Data written to Google Sheets ({len(df)} records).")
+    if not df.empty:
+        worksheet.clear()
+        set_with_dataframe(worksheet, df, include_index=False, include_column_header=True)
 
 if __name__ == "__main__":
     fetch_all_cities_data()
