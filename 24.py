@@ -41,10 +41,14 @@ API_URL_TEMPLATE = (
 
 HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Time (12-Hour Format)", "Temperature (°C)"]
 
-# Convert timestamp to 12-hour format (e.g., "1 AM", "2 PM")
+# Convert timestamp to 12-hour format
 def extract_12_hour_time(timestamp):
-    dt = datetime.fromisoformat(timestamp)  # Keep timestamp unchanged
-    return dt.strftime("%-I %p")  # Example: "1 AM", "2 PM", etc.
+    try:
+        dt = datetime.fromisoformat(timestamp).astimezone(IST)
+        return dt.strftime("%-I %p")  # Example: "1 AM", "2 PM"
+    except ValueError as e:
+        print(f"⚠️ Timestamp conversion error: {e}")
+        return ""
 
 # Fetch data with retry mechanism (Exponential Backoff)
 def fetch_today_data(lat, lon, city, retries=5, delay=2):
@@ -66,7 +70,7 @@ def fetch_today_data(lat, lon, city, retries=5, delay=2):
                 "Latitude": lat,
                 "Longitude": lon,
                 "Timestamp": ts,  # Keeping original timestamp format
-                "Time (12-Hour Format)": extract_12_hour_time(ts),  # New column
+                "Time (12-Hour Format)": extract_12_hour_time(ts),  # Adding new column
                 "Temperature (°C)": temp
             } for ts, temp in zip(timestamps, temperatures)]
 
@@ -90,7 +94,13 @@ def fetch_all_cities_data():
             else:
                 print(f"⚠️ Skipped: No data for {futures[future]}")
 
-    df = pd.DataFrame(all_data, columns=HEADERS)
+    df = pd.DataFrame(all_data)
+
+    # Ensure new column exists and enforce column order
+    if "Time (12-Hour Format)" not in df.columns:
+        df["Time (12-Hour Format)"] = df["Timestamp"].apply(extract_12_hour_time)
+
+    df = df[HEADERS]  # Ensure correct column order
 
     if not df.empty:
         print(f"📌 Saving {len(df)} records to 24_Hour_Data")
