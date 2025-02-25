@@ -39,7 +39,12 @@ API_URL_TEMPLATE = (
     "&hourly=temperature_2m&start_date={date}&end_date={date}&timezone=Asia%2FKolkata"
 )
 
-HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Temperature (°C)"]
+HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Time (12-Hour Format)", "Temperature (°C)"]
+
+# Convert timestamp to 12-hour format (e.g., "1 AM", "2 PM")
+def extract_12_hour_time(timestamp):
+    dt = datetime.fromisoformat(timestamp)  # Keep timestamp unchanged
+    return dt.strftime("%-I %p")  # Example: "1 AM", "2 PM", etc.
 
 # Fetch data with retry mechanism (Exponential Backoff)
 def fetch_today_data(lat, lon, city, retries=5, delay=2):
@@ -60,7 +65,8 @@ def fetch_today_data(lat, lon, city, retries=5, delay=2):
                 "City": city,
                 "Latitude": lat,
                 "Longitude": lon,
-                "Timestamp": ts,
+                "Timestamp": ts,  # Keeping original timestamp format
+                "Time (12-Hour Format)": extract_12_hour_time(ts),  # New column
                 "Temperature (°C)": temp
             } for ts, temp in zip(timestamps, temperatures)]
 
