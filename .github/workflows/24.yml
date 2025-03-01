@@ -2,8 +2,8 @@ name: Run Daily Data Script
 
 on:
   schedule:
-    - cron: "0 6 * * *"  # Runs at 6:00 AM UTC daily
-  workflow_dispatch:  # Allows manual execution
+    - cron: "30 0 * * *"  # Runs at 12:30 AM UTC (6:00 AM IST) daily
+  workflow_dispatch:  
 
 jobs:
   run-daily-script:
@@ -26,4 +26,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run Daily Data Script
-        run: python 24.py
+        run: python fetch_weather_24h.py
