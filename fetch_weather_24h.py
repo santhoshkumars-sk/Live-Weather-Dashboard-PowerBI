@@ -24,7 +24,7 @@ spreadsheet = gc.open_by_url(spreadsheet_url)
 try:
     worksheet = spreadsheet.worksheet("24_Hour_Data")
 except gspread.exceptions.WorksheetNotFound:
-    worksheet = spreadsheet.add_worksheet(title="24_Hour_Data", rows="50000", cols="10")
+    worksheet = spreadsheet.add_worksheet(title="24_Hour_Data", rows="20000", cols="10")
 
 # Read city coordinates from CSV
 CSV_URL = "https://raw.githubusercontent.com/santhoshkumars-sk/Live-Weather-Dashboard-PowerBI/main/city_coordinates.csv"
@@ -44,7 +44,7 @@ HEADERS = ["City", "Latitude", "Longitude", "Timestamp", "Time (12-Hour Format)"
 # Convert timestamp to 12-hour format
 def extract_12_hour_time(timestamp):
     try:
-        dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M").replace(tzinfo=pytz.utc).astimezone(IST)
+        dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M")
         return dt.strftime("%I %p")  
     except ValueError:
         return ""
