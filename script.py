@@ -35,7 +35,7 @@ api_keys = api_keys_env.split(",")
 api_key_cycle = cycle(api_keys)
 key_usage = {key: 0 for key in api_keys}
 
-HEADERS = ["Latitude", "Longitude", "City", "Weather", "Weather Icon", "Temperature (°C)",
+HEADERS = ["Latitude", "Longitude", "City", "Weather Main", "Weather Description", "Weather Icon", "Temperature (°C)",
            "Pressure (hPa)", "Humidity (%)", "Visibility (km)", "Wind Speed (km/h)", "Wind Degree (°)",
            "Cloud Coverage (%)", "Sunrise", "Sunset", "AQI", "AQI Category", "CO", "NO", "NO₂", "O₃", "SO₂", "PM2.5", "PM10", "NH₃", "Last Updated"]
 
@@ -70,7 +70,8 @@ def fetch_data(lat, lon, city):
                 aqi_value = pollution_data["list"][0]["main"]["aqi"]
                 return {
                     "Latitude": lat, "Longitude": lon, "City": city,
-                    "Weather": weather_data["weather"][0]["description"].title(),
+                    "Weather Main": weather_data["weather"][0]["main"],
+                    "Weather Description": weather_data["weather"][0]["description"].title(),
                     "Weather Icon": f"http://openweathermap.org/img/wn/{weather_data['weather'][0]['icon']}@2x.png",
                     "Temperature (°C)": f"{round(weather_data['main'].get('temp', 0), 2)}°C",
                     "Pressure (hPa)": f"{weather_data['main'].get('pressure', 0)} hPa",
@@ -94,7 +95,7 @@ def fetch_data(lat, lon, city):
 
 def fetch_all_data():
     IST = pytz.timezone('Asia/Kolkata')
-    current_timestamp = datetime.now(IST).strftime('%Y-%m-%d %I:%M %p')
+    current_timestamp = datetime.now(IST).strftime('%I:%M %p %d-%m-%Y')
     with ThreadPoolExecutor(max_workers=15) as executor:
         results = list(executor.map(lambda loc: fetch_data(*loc), districts))
     data_df = pd.DataFrame(filter(None, results))
