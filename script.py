@@ -95,7 +95,7 @@ def fetch_data(lat, lon, city):
 
 def fetch_all_data():
     IST = pytz.timezone('Asia/Kolkata')
-    current_timestamp = datetime.now(IST).strftime('%I:%M %p %d-%m-%Y')
+    current_timestamp = datetime.now(IST).strftime('%I:%M %p | %d-%m-%Y')
     with ThreadPoolExecutor(max_workers=15) as executor:
         results = list(executor.map(lambda loc: fetch_data(*loc), districts))
     data_df = pd.DataFrame(filter(None, results))
