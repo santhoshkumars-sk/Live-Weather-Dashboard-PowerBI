@@ -26,4 +26,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run Daily Data Script
-        run: python fetch_weather_24h.py
+        run: python temperature_forecast.py
