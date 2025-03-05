@@ -1,4 +1,4 @@
-name: Run Daily Data Script
+name: Run Temperature Forecast Script
 
 on:
   schedule:
