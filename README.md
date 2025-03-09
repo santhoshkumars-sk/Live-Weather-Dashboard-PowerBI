@@ -78,6 +78,6 @@ This project is open-source under the **MIT License.**
 
 ---
 
-**Maintainer:** [Santhoshkumar S](https://github.com/santhoshkumars-sk)\
+**Maintainer:** [Santhoshkumar S](https://github.com/santhoshkumars-sk)
 
 
