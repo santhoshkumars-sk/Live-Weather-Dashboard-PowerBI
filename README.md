@@ -68,16 +68,6 @@ python temperature_forecast.py
 - The **run\_script.yml** workflow executes `script.py` every **2 hours** to fetch and update real-time data in Google Sheets.
 - The **run\_temperature.yml** workflow executes `temperature_forecast.py` periodically to update temperature trends.
 
-## Contributions
 
-Feel free to raise issues, suggest improvements, or contribute via pull requests.
-
-## License
-
-This project is open-source under the **MIT License.**
-
----
-
-**Maintainer:** [Santhoshkumar S](https://github.com/santhoshkumars-sk)
 
 
